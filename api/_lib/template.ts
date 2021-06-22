@@ -1,11 +1,6 @@
-
-import { readFileSync } from 'fs';
-import marked from 'marked';
+ import { readFileSync } from 'fs';
 import { sanitizeHtml } from './sanitizer';
 import { ParsedRequest } from './types';
-const twemoji = require('twemoji');
-const twOptions = { folder: 'svg', ext: '.svg' };
-const emojify = (text: string) => twemoji.parse(text, twOptions);
 
 const rglr = readFileSync(`${__dirname}/../_fonts/Inter-Regular.woff2`).toString('base64');
 const bold = readFileSync(`${__dirname}/../_fonts/Inter-Bold.woff2`).toString('base64');
@@ -14,13 +9,14 @@ const mono = readFileSync(`${__dirname}/../_fonts/Vera-Mono.woff2`).toString('ba
 function getCss(theme: string, fontSize: string) {
     let background = 'white';
     let foreground = 'black';
-    let radial = 'lightgray';
-
     if (theme === 'dark') {
         background = 'black';
         foreground = 'white';
-        radial = 'dimgray';
     }
+    if (theme === 'purple-gradient') {
+        background = 'linear-gradient(254.65deg, #9C8BFF 4.75%, #6D55FF 88.97%), #F2F5F7';
+    }
+
     return `
     @font-face {
         font-family: 'Inter';
@@ -45,9 +41,6 @@ function getCss(theme: string, fontSize: string) {
 
     body {
         background: ${background};
-        background-image: radial-gradient(circle at 25px 25px, ${radial} 2%, transparent 0%), radial-gradient(circle at 75px 75px, ${radial} 2%, transparent 0%);
-        background-size: 100px 100px;
-        height: 100vh;
         display: flex;
         text-align: center;
         align-items: center;
@@ -65,33 +58,22 @@ function getCss(theme: string, fontSize: string) {
         content: '\`';
     }
 
+    .images-wrapper {
+        position: relative;
+        width: 100%;
+    }
+
     .logo-wrapper {
-        display: flex;
-        align-items: center;
-        align-content: center;
-        justify-content: center;
-        justify-items: center;
+        position: absolute;
+        top: 315px;
+        left: 831px;
     }
 
-    .logo {
-        margin: 0 75px;
-    }
-
-    .plus {
-        color: #BBB;
-        font-family: Times New Roman, Verdana;
-        font-size: 100px;
-    }
-
-    .spacer {
-        margin: 150px;
-    }
-
-    .emoji {
-        height: 1em;
-        width: 1em;
-        margin: 0 .05em 0 .1em;
-        vertical-align: -0.1em;
+    .background-wrapper {
+        position: absolute;
+        top: 50px;
+        left: 169px;
+        z-index: -1;
     }
     
     .heading {
@@ -104,43 +86,36 @@ function getCss(theme: string, fontSize: string) {
 }
 
 export function getHtml(parsedReq: ParsedRequest) {
-    const { text, theme, md, fontSize, images, widths, heights } = parsedReq;
-    return `<!DOCTYPE html>
-<html>
-    <meta charset="utf-8">
-    <title>Generated Image</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        ${getCss(theme, fontSize)}
-    </style>
-    <body>
-        <div>
-            <div class="spacer">
-            <div class="logo-wrapper">
-                ${images.map((img, i) =>
-                    getPlusSign(i) + getImage(img, widths[i], heights[i])
-                ).join('')}
-            </div>
-            <div class="spacer">
-            <div class="heading">${emojify(
-                md ? marked(text) : sanitizeHtml(text)
-            )}
-            </div>
-        </div>
-    </body>
-</html>`;
+    const { theme, fontSize, images } = parsedReq;
+    return (`
+        <!DOCTYPE html>
+        <html>
+            <meta charset="utf-8">
+            <title>Generated Image</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <style>
+                ${getCss(theme, fontSize)}
+            </style>
+            <body>
+                <div class="images-wrapper">
+                    <div class="logo-wrapper">
+                        ${getImage(images[0], '200', '200', '32', true)}
+                    </div>
+                    <div class="background-wrapper">
+                        ${getImage(images[1], '762', '508', '8')}
+                    </div>
+                </div>
+            </body>
+        </html>
+    `);
 }
 
-function getImage(src: string, width ='auto', height = '225') {
+function getImage(src: string, width='auto', height='225', borderRadius='0', boxShadow=false) {
     return `<img
-        class="logo"
         alt="Generated Image"
         src="${sanitizeHtml(src)}"
         width="${sanitizeHtml(width)}"
         height="${sanitizeHtml(height)}"
+        style="border-radius: ${borderRadius}px; ${boxShadow ? 'box-shadow: 2.4px 4.8px 4.8px rgba(0, 0, 0, 0.15);' : ''}"
     />`
-}
-
-function getPlusSign(i: number) {
-    return i === 0 ? '' : '<div class="plus">+</div>';
 }
