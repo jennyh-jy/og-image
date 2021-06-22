@@ -5,8 +5,18 @@ import { ParsedRequest } from './types';
 export function parseRequest(req: IncomingMessage) {
     console.log('HTTP ' + req.url);
     const { pathname, query } = parse(req.url || '/', true);
-    const { fontSize, images, widths, heights, theme, md } = (query || {});
+    const { fontSize, images, widths, heights, imageObj, theme, md } = (query || {});
 
+    if (Array.isArray(imageObj)) {
+        throw new Error('Expected a single images Object');
+    }
+    let parsedImages = JSON.parse(imageObj || '{}');
+    if (Object.keys(parsedImages).length === 0) {
+        console.log('Legacy image format');
+        parsedImages.images = getArray(images);
+        parsedImages.widths = getArray(widths);
+        parsedImages.heights = getArray(heights);
+    }
     if (Array.isArray(fontSize)) {
         throw new Error('Expected a single fontSize');
     }
@@ -32,11 +42,10 @@ export function parseRequest(req: IncomingMessage) {
         theme: theme === 'purple-gradient' ? 'purple-gradient' : 'light',
         md: md === '1' || md === 'true',
         fontSize: fontSize || '96px',
-        images: getArray(images),
-        widths: getArray(widths),
-        heights: getArray(heights),
+        images: parsedImages.images,
+        widths: parsedImages.widths,
+        heights: parsedImages.heights,
     };
-    // parsedRequest.images = getDefaultImages(parsedRequest.images, parsedRequest.theme);
     return parsedRequest;
 }
 
@@ -49,17 +58,3 @@ function getArray(stringOrArray: string[] | string | undefined): string[] {
         return [stringOrArray];
     }
 }
-
-// function getDefaultImages(images: string[], theme: Theme): string[] {
-//     const defaultImage = theme === 'light'
-//         ? 'https://assets.vercel.com/image/upload/front/assets/design/vercel-triangle-black.svg'
-//         : 'https://assets.vercel.com/image/upload/front/assets/design/vercel-triangle-white.svg';
-
-//     if (!images || !images[0]) {
-//         return [defaultImage];
-//     }
-//     if (!images[0].startsWith('https://assets.vercel.com/') && !images[0].startsWith('https://assets.zeit.co/')) {
-//         images[0] = defaultImage;
-//     }
-//     return images;
-// }
